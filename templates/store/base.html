@@ -1,0 +1,760 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Amazon Clone{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --amazon-orange: #FF9900;
+            --amazon-dark: #131921;
+            --amazon-light: #232F3E;
+            --amazon-hover: #febd69;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #E3E6E6;
+        }
+
+        /* Header Styles */
+        .amazon-header {
+            background-color: var(--amazon-dark);
+            color: white;
+            padding: 0;
+        }
+
+        .header-top {
+            background-color: var(--amazon-dark);
+            padding: 8px 0;
+        }
+
+        .header-bottom {
+            background-color: var(--amazon-light);
+            padding: 8px 0;
+        }
+
+        .amazon-logo {
+            color: white;
+            text-decoration: none;
+            padding: 10px 15px;
+            border: 1px solid transparent;
+            display: inline-block;
+            transition: border-color 0.2s;
+        }
+
+        .amazon-logo:hover {
+            border-color: white;
+            color: white;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .logo-domain {
+            font-size: 14px;
+            color: var(--amazon-orange);
+        }
+
+        /* Delivery Address */
+        .delivery-address {
+            color: white;
+            padding: 8px 12px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .delivery-address:hover {
+            border-color: white;
+        }
+
+        .deliver-to {
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .location {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* Search Bar */
+        .search-container {
+            flex: 1;
+            max-width: 800px;
+            margin: 0 15px;
+        }
+
+        .search-form {
+            display: flex;
+            height: 40px;
+        }
+
+        .search-category {
+            background-color: #f3f3f3;
+            border: none;
+            border-radius: 4px 0 0 4px;
+            padding: 0 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .search-input {
+            flex: 1;
+            border: none;
+            padding: 0 10px;
+            font-size: 14px;
+        }
+
+        .search-input:focus {
+            outline: none;
+        }
+
+        .search-btn {
+            background-color: var(--amazon-orange);
+            border: none;
+            border-radius: 0 4px 4px 0;
+            padding: 0 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .search-btn:hover {
+            background-color: #F08804;
+        }
+
+        /* Autocomplete */
+        .search-autocomplete {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .search-autocomplete.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+        }
+
+        .autocomplete-item:hover {
+            background-color: #f3f3f3;
+        }
+
+        .autocomplete-item i {
+            margin-right: 10px;
+            color: #666;
+        }
+
+        /* Header Links */
+        .header-link {
+            color: white;
+            text-decoration: none;
+            padding: 8px 12px;
+            border: 1px solid transparent;
+            display: inline-block;
+            transition: border-color 0.2s;
+        }
+
+        .header-link:hover {
+            border-color: white;
+            color: white;
+        }
+
+        .header-link-label {
+            font-size: 12px;
+            display: block;
+        }
+
+        .header-link-text {
+            font-size: 14px;
+            font-weight: bold;
+            display: block;
+        }
+
+        /* Cart */
+        .cart-link {
+            position: relative;
+            color: white;
+            text-decoration: none;
+            padding: 8px 12px;
+            border: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        .cart-link:hover {
+            border-color: white;
+            color: white;
+        }
+
+        .cart-count {
+            position: absolute;
+            top: 5px;
+            left: 20px;
+            background-color: var(--amazon-orange);
+            color: var(--amazon-dark);
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+
+        .cart-icon {
+            font-size: 28px;
+        }
+
+        /* Navigation Bar */
+        .nav-bar {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 0 15px;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 10px;
+            border: 1px solid transparent;
+            transition: border-color 0.2s;
+            white-space: nowrap;
+        }
+
+        .nav-link:hover {
+            border-color: white;
+            color: white;
+        }
+
+        .hamburger-menu {
+            display: none;
+            color: white;
+            background: none;
+            border: none;
+            font-size: 24px;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        /* Footer */
+        .amazon-footer {
+            background-color: var(--amazon-light);
+            color: white;
+            margin-top: 50px;
+        }
+
+        .back-to-top {
+            background-color: #37475A;
+            text-align: center;
+            padding: 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .back-to-top:hover {
+            background-color: #485769;
+        }
+
+        .footer-content {
+            padding: 40px 0;
+        }
+
+        .footer-column h5 {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .footer-column ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer-column ul li {
+            margin-bottom: 8px;
+        }
+
+        .footer-column a {
+            color: #DDD;
+            text-decoration: none;
+            font-size: 14px;
+            transition: text-decoration 0.2s;
+        }
+
+        .footer-column a:hover {
+            text-decoration: underline;
+            color: white;
+        }
+
+        .footer-bottom {
+            background-color: var(--amazon-dark);
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+        }
+
+        /* Mobile Sidebar */
+        .mobile-sidebar {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 300px;
+            height: 100%;
+            background-color: white;
+            z-index: 2000;
+            transition: left 0.3s;
+            overflow-y: auto;
+        }
+
+        .mobile-sidebar.show {
+            left: 0;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1999;
+            display: none;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
+
+        .sidebar-header {
+            background-color: var(--amazon-light);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .sidebar-content {
+            padding: 0;
+        }
+
+        .sidebar-section {
+            border-bottom: 1px solid #ddd;
+        }
+
+        .sidebar-section-title {
+            padding: 15px;
+            font-weight: bold;
+            background-color: #f8f9fa;
+        }
+
+        .sidebar-link {
+            display: block;
+            padding: 12px 15px;
+            color: #333;
+            text-decoration: none;
+            border-bottom: 1px solid #eee;
+        }
+
+        .sidebar-link:hover {
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .search-container {
+                max-width: 400px;
+            }
+
+            .nav-bar {
+                gap: 10px;
+            }
+
+            .nav-link {
+                font-size: 13px;
+                padding: 8px 5px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hamburger-menu {
+                display: block;
+            }
+
+            .desktop-nav {
+                display: none;
+            }
+
+            .search-container {
+                margin: 0 10px;
+            }
+
+            .delivery-address,
+            .returns-orders {
+                display: none;
+            }
+
+            .header-link-label {
+                font-size: 10px;
+            }
+
+            .header-link-text {
+                font-size: 12px;
+            }
+
+            .footer-column {
+                margin-bottom: 30px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .search-category {
+                display: none;
+            }
+
+            .amazon-logo {
+                padding: 10px 8px;
+            }
+
+            .logo-text {
+                font-size: 20px;
+            }
+
+            .search-container {
+                max-width: none;
+            }
+        }
+
+        /* Main Content */
+        .main-content {
+            min-height: calc(100vh - 200px);
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Header -->
+    <header class="amazon-header">
+        <!-- Top Header -->
+        <div class="header-top">
+            <div class="container-fluid">
+                <div class="d-flex align-items-center justify-content-between">
+                    <!-- Logo -->
+                    <a href="{% url 'home' %}" class="amazon-logo">
+                        <div class="logo-text">amazon<span class="logo-domain">.co.ke</span></div>
+                    </a>
+
+                    <!-- Delivery Address -->
+                    <div class="delivery-address d-none d-md-block">
+                        <div class="deliver-to">Deliver to</div>
+                        <div class="location">
+                            <i class="fas fa-map-marker-alt"></i> Kenya
+                        </div>
+                    </div>
+
+                    <!-- Search Bar -->
+                    <div class="search-container position-relative">
+                        <form class="search-form" method="GET" action="{% url 'search' %}">
+                            <select name="category" class="search-category" id="searchCategory">
+                                <option value="">All</option>
+                                {% for category in all_categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <input 
+                                type="text" 
+                                name="q" 
+                                class="search-input" 
+                                placeholder="Search Amazon.co.ke" 
+                                id="searchInput"
+                                autocomplete="off"
+                            >
+                            <button type="submit" class="search-btn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </form>
+                        <div class="search-autocomplete" id="autocompleteResults"></div>
+                    </div>
+
+                    <!-- Account & Lists -->
+                    {% if user.is_authenticated %}
+                    <a href="#" class="header-link d-none d-md-inline-block">
+                        <span class="header-link-label">Hello, {{ user.username }}</span>
+                        <span class="header-link-text">Account & Lists</span>
+                    </a>
+                    {% else %}
+                    <a href="#" class="header-link d-none d-md-inline-block">
+                        <span class="header-link-label">Hello, Sign in</span>
+                        <span class="header-link-text">Account & Lists</span>
+                    </a>
+                    {% endif %}
+
+                    <!-- Returns & Orders -->
+                    <a href="#" class="header-link returns-orders d-none d-lg-inline-block">
+                        <span class="header-link-label">Returns</span>
+                        <span class="header-link-text">& Orders</span>
+                    </a>
+
+                    <!-- Cart -->
+                    <a href="{% url 'cart' %}" class="cart-link">
+                        <i class="fas fa-shopping-cart cart-icon"></i>
+                        <span class="cart-count" id="cartCount">{{ cart_count|default:0 }}</span>
+                        <span class="d-none d-md-inline">Cart</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Header -->
+        <div class="header-bottom">
+            <div class="container-fluid">
+                <div class="nav-bar">
+                    <!-- Hamburger Menu -->
+                    <button class="hamburger-menu" id="menuToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+
+                    <!-- Desktop Navigation -->
+                    <div class="desktop-nav d-none d-md-flex" style="gap: 20px;">
+                        <a href="{% url 'home' %}" class="nav-link">All</a>
+                        <a href="#" class="nav-link">Today's Deals</a>
+                        <a href="#" class="nav-link">Customer Service</a>
+                        <a href="#" class="nav-link">Registry</a>
+                        <a href="#" class="nav-link">Gift Cards</a>
+                        <a href="#" class="nav-link">Sell</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Sidebar -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="mobile-sidebar" id="mobileSidebar">
+        <div class="sidebar-header">
+            <h5 class="mb-0">
+                {% if user.is_authenticated %}
+                Hello, {{ user.username }}
+                {% else %}
+                Hello, Sign in
+                {% endif %}
+            </h5>
+            <button class="sidebar-close" id="sidebarClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="sidebar-content">
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Shop By Category</div>
+                {% for category in all_categories %}
+                <a href="{% url 'category' category.id %}" class="sidebar-link">{{ category.name }}</a>
+                {% endfor %}
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Programs & Features</div>
+                <a href="#" class="sidebar-link">Today's Deals</a>
+                <a href="#" class="sidebar-link">Gift Cards</a>
+                <a href="#" class="sidebar-link">Registry</a>
+                <a href="#" class="sidebar-link">Sell on Amazon</a>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Help & Settings</div>
+                <a href="#" class="sidebar-link">Your Account</a>
+                <a href="#" class="sidebar-link">Customer Service</a>
+                {% if user.is_authenticated %}
+                <a href="#" class="sidebar-link">Sign Out</a>
+                {% else %}
+                <a href="#" class="sidebar-link">Sign In</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="amazon-footer">
+        <div class="back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+            Back to top
+        </div>
+        <div class="footer-content">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-3 col-6 footer-column">
+                        <h5>Get to Know Us</h5>
+                        <ul>
+                            <li><a href="#">About Us</a></li>
+                            <li><a href="#">Careers</a></li>
+                            <li><a href="#">Press Releases</a></li>
+                            <li><a href="#">Amazon Science</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-3 col-6 footer-column">
+                        <h5>Make Money with Us</h5>
+                        <ul>
+                            <li><a href="#">Sell on Amazon</a></li>
+                            <li><a href="#">Sell under Amazon Accelerator</a></li>
+                            <li><a href="#">Become an Affiliate</a></li>
+                            <li><a href="#">Advertise Your Products</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-3 col-6 footer-column">
+                        <h5>Amazon Payment Products</h5>
+                        <ul>
+                            <li><a href="#">Amazon Credit Card</a></li>
+                            <li><a href="#">Shop with Points</a></li>
+                            <li><a href="#">Reload Your Balance</a></li>
+                            <li><a href="#">Currency Converter</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-3 col-6 footer-column">
+                        <h5>Let Us Help You</h5>
+                        <ul>
+                            <li><a href="#">Your Account</a></li>
+                            <li><a href="#">Your Orders</a></li>
+                            <li><a href="#">Shipping Rates & Policies</a></li>
+                            <li><a href="#">Returns & Replacements</a></li>
+                            <li><a href="#">Help</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 1996-2025, Amazon.co.ke, Inc. or its affiliates</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Mobile Sidebar Toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const mobileSidebar = document.getElementById('mobileSidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const sidebarClose = document.getElementById('sidebarClose');
+
+        function openSidebar() {
+            mobileSidebar.classList.add('show');
+            sidebarOverlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            mobileSidebar.classList.remove('show');
+            sidebarOverlay.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        menuToggle.addEventListener('click', openSidebar);
+        sidebarClose.addEventListener('click', closeSidebar);
+        sidebarOverlay.addEventListener('click', closeSidebar);
+
+        // Search Autocomplete
+        const searchInput = document.getElementById('searchInput');
+        const autocompleteResults = document.getElementById('autocompleteResults');
+        let searchTimeout;
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+
+            if (query.length < 2) {
+                autocompleteResults.classList.remove('show');
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                fetch(`/api/search-suggestions/?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.suggestions && data.suggestions.length > 0) {
+                            displayAutocomplete(data.suggestions);
+                        } else {
+                            autocompleteResults.classList.remove('show');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching suggestions:', error);
+                    });
+            }, 300);
+        });
+
+        function displayAutocomplete(suggestions) {
+            autocompleteResults.innerHTML = '';
+            suggestions.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'autocomplete-item';
+                div.innerHTML = `<i class="fas fa-search"></i> ${item.name}`;
+                div.addEventListener('click', () => {
+                    searchInput.value = item.name;
+                    autocompleteResults.classList.remove('show');
+                    document.querySelector('.search-form').submit();
+                });
+                autocompleteResults.appendChild(div);
+            });
+            autocompleteResults.classList.add('show');
+        }
+
+        // Close autocomplete when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !autocompleteResults.contains(e.target)) {
+                autocompleteResults.classList.remove('show');
+            }
+        });
+
+        // Prevent autocomplete from closing when clicking inside
+        searchInput.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

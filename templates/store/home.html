@@ -1,0 +1,494 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Amazon.co.ke: Online Shopping Kenya - Electronics, Phones, Fashion & More{% endblock %}
+
+{% block content %}
+<!-- Hero Carousel -->
+<div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
+    <div class="carousel-indicators">
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
+    </div>
+    <div class="carousel-inner">
+        <div class="carousel-item active">
+            <div class="hero-slide" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="container">
+                    <div class="row align-items-center" style="min-height: 400px;">
+                        <div class="col-md-6 text-white">
+                            <h1 class="display-4 fw-bold">Welcome to Amazon.co.ke</h1>
+                            <p class="lead">Discover amazing deals on electronics, fashion, and more</p>
+                            <a href="{% url 'products' %}" class="btn btn-warning btn-lg">Shop Now</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="carousel-item">
+            <div class="hero-slide" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="container">
+                    <div class="row align-items-center" style="min-height: 400px;">
+                        <div class="col-md-6 text-white">
+                            <h1 class="display-4 fw-bold">Today's Deals</h1>
+                            <p class="lead">Save big on your favorite products</p>
+                            <a href="{% url 'deals' %}" class="btn btn-warning btn-lg">View Deals</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="carousel-item">
+            <div class="hero-slide" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="container">
+                    <div class="row align-items-center" style="min-height: 400px;">
+                        <div class="col-md-6 text-white">
+                            <h1 class="display-4 fw-bold">Fast Delivery</h1>
+                            <p class="lead">Get your orders delivered to your doorstep</p>
+                            <a href="{% url 'products' %}" class="btn btn-warning btn-lg">Start Shopping</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon"></span>
+    </button>
+</div>
+
+<!-- Category Cards -->
+<div class="container my-4">
+    <div class="row g-3">
+        {% for category in categories %}
+        <div class="col-lg-3 col-md-4 col-sm-6 col-6">
+            <div class="category-card">
+                <h5>{{ category.name }}</h5>
+                {% if category.products.first.image %}
+                <img src="{{ category.products.first.image.url }}" alt="{{ category.name }}">
+                {% else %}
+                <div class="category-placeholder">
+                    <i class="fas fa-box fa-3x"></i>
+                </div>
+                {% endif %}
+                <a href="{% url 'category' category.id %}" class="category-link">Shop now</a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <p class="text-center text-muted">No categories available</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Deals Section -->
+<div class="container my-5">
+    <div class="section-header">
+        <h2>Today's Deals</h2>
+        <a href="{% url 'deals' %}" class="see-more">See all deals</a>
+    </div>
+    <div class="row g-3">
+        {% for product in featured_products|slice:":4" %}
+        <div class="col-lg-3 col-md-4 col-sm-6 col-6">
+            <div class="product-card">
+                {% if product.image %}
+                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image">
+                {% else %}
+                <div class="product-placeholder">
+                    <i class="fas fa-image fa-3x"></i>
+                </div>
+                {% endif %}
+                <div class="product-info">
+                    <div class="product-name">{{ product.name|truncatewords:10 }}</div>
+                    <div class="product-rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star-half-alt"></i>
+                        <span class="rating-count">({{ product.id|add:100 }})</span>
+                    </div>
+                    <div class="product-price">
+                        <span class="price-symbol">KSh</span>
+                        <span class="price-amount">{{ product.price|floatformat:0 }}</span>
+                    </div>
+                    {% if product.is_in_stock %}
+                    <div class="stock-status in-stock">In Stock</div>
+                    {% else %}
+                    <div class="stock-status out-stock">Out of Stock</div>
+                    {% endif %}
+                </div>
+                <a href="{% url 'product_detail' product.id %}" class="product-overlay">View Details</a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <p class="text-center text-muted">No products available</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Best Sellers Section -->
+<div class="container my-5">
+    <div class="section-header">
+        <h2>Best Sellers</h2>
+        <a href="{% url 'bestsellers' %}" class="see-more">See more</a>
+    </div>
+    <div class="row g-3">
+        {% for product in bestsellers|slice:":8" %}
+        <div class="col-lg-3 col-md-4 col-sm-6 col-6">
+            <div class="product-card">
+                {% if product.image %}
+                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image">
+                {% else %}
+                <div class="product-placeholder">
+                    <i class="fas fa-image fa-3x"></i>
+                </div>
+                {% endif %}
+                <div class="product-info">
+                    <div class="product-name">{{ product.name|truncatewords:10 }}</div>
+                    <div class="product-rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star-half-alt"></i>
+                        <span class="rating-count">({{ product.id|add:200 }})</span>
+                    </div>
+                    <div class="product-price">
+                        <span class="price-symbol">KSh</span>
+                        <span class="price-amount">{{ product.price|floatformat:0 }}</span>
+                    </div>
+                    {% if product.is_in_stock %}
+                    <div class="stock-status in-stock">In Stock</div>
+                    {% else %}
+                    <div class="stock-status out-stock">Out of Stock</div>
+                    {% endif %}
+                </div>
+                <a href="{% url 'product_detail' product.id %}" class="product-overlay">View Details</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="container my-5">
+    <div class="row g-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="feature-box">
+                <i class="fas fa-shipping-fast fa-3x text-warning mb-3"></i>
+                <h5>Fast Delivery</h5>
+                <p>Quick and reliable shipping across Kenya</p>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="feature-box">
+                <i class="fas fa-shield-alt fa-3x text-warning mb-3"></i>
+                <h5>Secure Shopping</h5>
+                <p>Your data is safe and secure with us</p>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="feature-box">
+                <i class="fas fa-undo fa-3x text-warning mb-3"></i>
+                <h5>Easy Returns</h5>
+                <p>30-day return policy on all products</p>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="feature-box">
+                <i class="fas fa-headset fa-3x text-warning mb-3"></i>
+                <h5>24/7 Support</h5>
+                <p>We're here to help anytime you need</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Hero Carousel */
+    .hero-slide {
+        min-height: 400px;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Category Cards */
+    .category-card {
+        background: white;
+        padding: 20px;
+        border-radius: 4px;
+        text-align: center;
+        transition: transform 0.3s, box-shadow 0.3s;
+        cursor: pointer;
+        height: 100%;
+    }
+
+    .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .category-card h5 {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #0F1111;
+    }
+
+    .category-card img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        margin-bottom: 15px;
+        border-radius: 4px;
+    }
+
+    .category-placeholder {
+        width: 100%;
+        height: 200px;
+        background-color: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 15px;
+        border-radius: 4px;
+        color: #ccc;
+    }
+
+    .category-link {
+        color: #007185;
+        text-decoration: none;
+        font-size: 13px;
+    }
+
+    .category-link:hover {
+        color: #C7511F;
+        text-decoration: underline;
+    }
+
+    /* Section Headers */
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .section-header h2 {
+        font-size: 24px;
+        font-weight: bold;
+        color: #0F1111;
+        margin: 0;
+    }
+
+    .see-more {
+        color: #007185;
+        text-decoration: none;
+        font-size: 14px;
+    }
+
+    .see-more:hover {
+        color: #C7511F;
+        text-decoration: underline;
+    }
+
+    /* Product Cards */
+    .product-card {
+        background: white;
+        border-radius: 4px;
+        overflow: hidden;
+        transition: transform 0.3s, box-shadow 0.3s;
+        cursor: pointer;
+        position: relative;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .product-image {
+        width: 100%;
+        height: 250px;
+        object-fit: cover;
+    }
+
+    .product-placeholder {
+        width: 100%;
+        height: 250px;
+        background-color: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ccc;
+    }
+
+    .product-info {
+        padding: 15px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .product-name {
+        font-size: 14px;
+        color: #0F1111;
+        margin-bottom: 8px;
+        line-height: 1.4;
+        height: 40px;
+        overflow: hidden;
+    }
+
+    .product-rating {
+        color: #FFA41C;
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .rating-count {
+        color: #007185;
+        margin-left: 5px;
+        font-size: 13px;
+    }
+
+    .product-price {
+        font-size: 18px;
+        color: #B12704;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .price-symbol {
+        font-size: 14px;
+        vertical-align: super;
+    }
+
+    .stock-status {
+        font-size: 12px;
+        font-weight: bold;
+        margin-top: auto;
+    }
+
+    .in-stock {
+        color: #007600;
+    }
+
+    .out-stock {
+        color: #B12704;
+    }
+
+    .product-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 16px;
+    }
+
+    .product-card:hover .product-overlay {
+        opacity: 1;
+    }
+
+    /* Features Section */
+    .feature-box {
+        text-align: center;
+        padding: 30px 15px;
+        background: white;
+        border-radius: 4px;
+        height: 100%;
+    }
+
+    .feature-box h5 {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #0F1111;
+    }
+
+    .feature-box p {
+        font-size: 14px;
+        color: #565959;
+        margin: 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .hero-slide {
+            min-height: 300px;
+        }
+
+        .hero-slide h1 {
+            font-size: 28px;
+        }
+
+        .hero-slide .lead {
+            font-size: 16px;
+        }
+
+        .category-card img,
+        .category-placeholder {
+            height: 150px;
+        }
+
+        .product-image,
+        .product-placeholder {
+            height: 200px;
+        }
+
+        .section-header h2 {
+            font-size: 20px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .hero-slide {
+            min-height: 250px;
+        }
+
+        .hero-slide h1 {
+            font-size: 24px;
+        }
+
+        .category-card img,
+        .category-placeholder {
+            height: 120px;
+        }
+
+        .product-image,
+        .product-placeholder {
+            height: 150px;
+        }
+
+        .product-name {
+            font-size: 12px;
+            height: 35px;
+        }
+
+        .product-price {
+            font-size: 16px;
+        }
+    }
+</style>
+{% endblock %}

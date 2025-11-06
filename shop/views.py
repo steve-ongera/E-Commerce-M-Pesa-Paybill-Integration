@@ -15,6 +15,42 @@ from .models import Product, Category, Cart, CartItem, Order, OrderItem, MpesaPa
 
 logger = logging.getLogger(__name__)
 
+from django.http import JsonResponse
+from django.db.models import Q
+from .models import Product, Category
+
+def search_suggestions(request):
+    """API endpoint for search autocomplete"""
+    query = request.GET.get('q', '').strip()
+    
+    if len(query) < 2:
+        return JsonResponse({'suggestions': []})
+    
+    # Search in product names and descriptions
+    products = Product.objects.filter(
+        Q(name__icontains=query) | Q(description__icontains=query),
+        is_active=True
+    ).values('id', 'name')[:10]
+    
+    suggestions = [{'id': p['id'], 'name': p['name']} for p in products]
+    
+    return JsonResponse({'suggestions': suggestions})
+
+
+def home_view(request):
+    """Home page view"""
+    categories = Category.objects.all()[:8]
+    featured_products = Product.objects.filter(is_active=True).order_by('-created_at')[:4]
+    bestsellers = Product.objects.filter(is_active=True).order_by('-id')[:8]
+    
+    context = {
+        'categories': categories,
+        'featured_products': featured_products,
+        'bestsellers': bestsellers,
+    }
+    
+    return render(request, 'store/home.html', context)
+
 
 def get_mpesa_access_token():
     """Generate M-Pesa access token"""
