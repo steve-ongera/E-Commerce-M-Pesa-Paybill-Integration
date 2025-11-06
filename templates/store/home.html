@@ -32,7 +32,7 @@
                         <div class="col-md-6 text-white">
                             <h1 class="display-4 fw-bold">Today's Deals</h1>
                             <p class="lead">Save big on your favorite products</p>
-                            <a href="{% url 'deals' %}" class="btn btn-warning btn-lg">View Deals</a>
+                            <a href="#" class="btn btn-warning btn-lg">View Deals</a>
                         </div>
                     </div>
                 </div>
@@ -89,7 +89,7 @@
 <div class="container my-5">
     <div class="section-header">
         <h2>Today's Deals</h2>
-        <a href="{% url 'deals' %}" class="see-more">See all deals</a>
+        <a href="#" class="see-more">See all deals</a>
     </div>
     <div class="row g-3">
         {% for product in featured_products|slice:":4" %}
@@ -137,7 +137,7 @@
 <div class="container my-5">
     <div class="section-header">
         <h2>Best Sellers</h2>
-        <a href="{% url 'bestsellers' %}" class="see-more">See more</a>
+        <a href="#" class="see-more">See more</a>
     </div>
     <div class="row g-3">
         {% for product in bestsellers|slice:":8" %}
