@@ -321,6 +321,41 @@ def add_to_wishlist(request):
         })
 
 
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404
+
+
+@login_required
+@require_POST
+def toggle_wishlist(request, product_id):
+    """Toggle product in user's wishlist"""
+    product = get_object_or_404(Product, id=product_id)
+    
+    wishlist_item = Wishlist.objects.filter(
+        user=request.user,
+        product=product
+    ).first()
+    
+    if wishlist_item:
+        wishlist_item.delete()
+        action = 'removed'
+        message = f'{product.name} removed from wishlist'
+    else:
+        Wishlist.objects.create(
+            user=request.user,
+            product=product
+        )
+        action = 'added'
+        message = f'{product.name} added to wishlist'
+    
+    return JsonResponse({
+        'success': True,
+        'action': action,
+        'message': message
+    })
+
 @login_required
 @require_POST
 def submit_review(request, product_id):
@@ -590,53 +625,162 @@ def remove_cart_item(request, item_id):
             'message': str(e)
         })
 
+from django.shortcuts import render, get_object_or_404
+from django.core.paginator import Paginator
+from django.db.models import Q, Count, Avg
+from .models import Product, Category, Brand, Wishlist
+from decimal import Decimal
+
 
 def product_list(request):
-    """
-    Display all products with filters
-    """
-    products = Product.objects.filter(is_active=True).order_by('-created_at')
+    """Amazon-style product listing with filters and search"""
     
-    # Get all categories and brands for filters
-    categories = Category.objects.filter(is_active=True, parent=None)
-    brands = Brand.objects.filter(is_active=True)
+    # Get all active products
+    products = Product.objects.filter(is_active=True).select_related('category', 'brand')
     
-    # Apply filters
-    category_id = request.GET.get('category')
-    brand_id = request.GET.get('brand')
-    min_price = request.GET.get('min_price')
-    max_price = request.GET.get('max_price')
-    sort_by = request.GET.get('sort', '-created_at')
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        products = products.filter(
+            Q(name__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(category__name__icontains=search_query) |
+            Q(brand__name__icontains=search_query)
+        )
     
-    if category_id:
-        products = products.filter(category_id=category_id)
+    # Category filter
+    category_slug = request.GET.get('category', '')
+    selected_category = None
+    if category_slug:
+        selected_category = get_object_or_404(Category, slug=category_slug)
+        products = products.filter(
+            Q(category=selected_category) | 
+            Q(category__parent=selected_category)
+        )
+    
+    # Brand filter
+    brand_id = request.GET.get('brand', '')
+    selected_brand = None
     if brand_id:
-        products = products.filter(brand_id=brand_id)
+        selected_brand = get_object_or_404(Brand, id=brand_id)
+        products = products.filter(brand=selected_brand)
+    
+    # Price range filter
+    min_price = request.GET.get('min_price', '')
+    max_price = request.GET.get('max_price', '')
+    
     if min_price:
-        products = products.filter(price__gte=min_price)
+        try:
+            products = products.filter(price__gte=Decimal(min_price))
+        except:
+            pass
+    
     if max_price:
-        products = products.filter(price__lte=max_price)
+        try:
+            products = products.filter(price__lte=Decimal(max_price))
+        except:
+            pass
+    
+    # Rating filter
+    min_rating = request.GET.get('rating', '')
+    if min_rating:
+        try:
+            min_rating = int(min_rating)
+            # This is a simplified version - for better performance, 
+            # consider adding a cached average_rating field to Product model
+            products = [p for p in products if p.average_rating >= min_rating]
+        except:
+            pass
+    
+    # Special filters
+    if request.GET.get('featured') == '1':
+        products = products.filter(is_featured=True)
+    
+    if request.GET.get('bestseller') == '1':
+        products = products.filter(is_bestseller=True)
+    
+    if request.GET.get('new_arrival') == '1':
+        products = products.filter(is_new_arrival=True)
+    
+    if request.GET.get('free_shipping') == '1':
+        products = products.filter(free_shipping=True)
+    
+    if request.GET.get('in_stock') == '1':
+        products = products.filter(stock__gt=0)
     
     # Sorting
+    sort_by = request.GET.get('sort', 'featured')
+    
     if sort_by == 'price_low':
         products = products.order_by('price')
     elif sort_by == 'price_high':
         products = products.order_by('-price')
-    elif sort_by == 'popular':
-        products = products.order_by('-sold_count')
-    elif sort_by == 'rating':
-        products = products.annotate(avg_rating=Avg('reviews__rating')).order_by('-avg_rating')
     elif sort_by == 'newest':
         products = products.order_by('-created_at')
+    elif sort_by == 'name':
+        products = products.order_by('name')
+    elif sort_by == 'rating':
+        products = products.order_by('-sold_count')  # Using sold_count as proxy
+    else:  # featured (default)
+        products = products.order_by('-is_featured', '-sold_count', '-view_count')
+    
+    # Get all categories and brands for filters
+    categories = Category.objects.filter(
+        is_active=True, 
+        parent=None
+    ).prefetch_related('subcategories')
+    
+    brands = Brand.objects.filter(is_active=True).order_by('name')
+    
+    # Get price range for filter
+    if products:
+        if isinstance(products, list):
+            price_min = min(p.price for p in products)
+            price_max = max(p.price for p in products)
+        else:
+            price_range = products.aggregate(
+                min_price=models.Min('price'),
+                max_price=models.Max('price')
+            )
+            price_min = price_range['min_price'] or 0
+            price_max = price_range['max_price'] or 10000
+    else:
+        price_min = 0
+        price_max = 10000
+    
+    # Get user's wishlist if authenticated
+    wishlist_ids = []
+    if request.user.is_authenticated:
+        wishlist_ids = Wishlist.objects.filter(
+            user=request.user
+        ).values_list('product_id', flat=True)
+    
+    # Pagination
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(products, 24)  # 24 products per page
+    page_obj = paginator.get_page(page_number)
+    
+    # Calculate result count
+    total_results = paginator.count
     
     context = {
-        'products': products,
+        'products': page_obj,
         'categories': categories,
         'brands': brands,
+        'selected_category': selected_category,
+        'selected_brand': selected_brand,
+        'search_query': search_query,
+        'sort_by': sort_by,
+        'total_results': total_results,
+        'price_min': int(price_min),
+        'price_max': int(price_max),
+        'current_min_price': min_price or '',
+        'current_max_price': max_price or '',
+        'wishlist_ids': list(wishlist_ids),
+        'page_obj': page_obj,
     }
     
     return render(request, 'products/product_list.html', context)
-
 
 from django.shortcuts import render, get_object_or_404
 from .models import Category, Product

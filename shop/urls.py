@@ -22,6 +22,7 @@ urlpatterns = [
     # Wishlist URLs
     path('wishlist/', views.wishlist_view, name='wishlist'),
     path('wishlist/add/', views.add_to_wishlist, name='add_to_wishlist'),
+    path('wishlist/toggle/<int:product_id>/', views.toggle_wishlist, name='toggle_wishlist'),
     
     # Review URLs
     path('product/<int:product_id>/review/', views.submit_review, name='submit_review'),
