@@ -139,13 +139,13 @@ MPESA_SHORTCODE = config('MPESA_SHORTCODE', default='174379')  # Sandbox shortco
 MPESA_PASSKEY = config('MPESA_PASSKEY', default='')
 MPESA_CALLBACK_URL = config(
     'MPESA_CALLBACK_URL', 
-    default='https://yourdomain.com/mpesa/callback/'
+    default='https://80df38a8e45a.ngrok-free.app/mpesa/callback/'
 )
 
 # M-Pesa Timeout URLs (optional)
 MPESA_TIMEOUT_URL = config(
     'MPESA_TIMEOUT_URL',
-    default='https://yourdomain.com/mpesa/timeout/'
+    default='https://80df38a8e45a.ngrok-free.app/mpesa/timeout/'
 )
 
 # ============================================
@@ -154,6 +154,7 @@ MPESA_TIMEOUT_URL = config(
 CSRF_TRUSTED_ORIGINS = [
     'https://sandbox.safaricom.co.ke',
     'https://api.safaricom.co.ke',
+    'https://80df38a8e45a.ngrok-free.app',
 ]
 
 # Login URL

@@ -29,7 +29,7 @@ urlpatterns = [
     
     # Checkout & Payment URLs
     path('checkout/', views.checkout, name='checkout'),
-    path('mpesa/check-payment-status/<int:order_id>/', views.check_payment_status, name='check_payment_status'),
+    path('check-payment-status/<int:order_id>/', views.check_payment_status, name='check_payment_status'),
     path('mpesa/callback/', views.mpesa_callback, name='mpesa_callback'),
     
     # Order URLs

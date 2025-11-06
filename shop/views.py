@@ -51,34 +51,88 @@ def home_view(request):
     
     return render(request, 'store/home.html', context)
 
+import requests
+import base64
+import logging
+from datetime import datetime
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
+
 
 def get_mpesa_access_token():
-    """Generate M-Pesa access token"""
+    """
+    Get M-Pesa access token using Consumer Key and Secret
+    """
     try:
+        # Determine the correct URL based on environment
         if settings.MPESA_ENVIRONMENT == 'sandbox':
             url = 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
         else:
             url = 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
         
-        credentials = base64.b64encode(
-            f'{settings.MPESA_CONSUMER_KEY}:{settings.MPESA_CONSUMER_SECRET}'.encode()
-        ).decode()
-        headers = {'Authorization': f'Basic {credentials}'}
+        # Create Basic Auth credentials
+        consumer_key = settings.MPESA_CONSUMER_KEY
+        consumer_secret = settings.MPESA_CONSUMER_SECRET
         
+        # Encode credentials in base64
+        credentials = f"{consumer_key}:{consumer_secret}"
+        encoded_credentials = base64.b64encode(credentials.encode()).decode()
+        
+        # Set headers
+        headers = {
+            'Authorization': f'Basic {encoded_credentials}',
+            'Content-Type': 'application/json'
+        }
+        
+        logger.info("Requesting M-Pesa access token...")
+        
+        # Make the request
         response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
-        return response.json().get('access_token')
+        
+        # Log response for debugging
+        logger.info(f"Access token response status: {response.status_code}")
+        
+        if response.status_code == 200:
+            result = response.json()
+            access_token = result.get('access_token')
+            
+            if access_token:
+                logger.info("Successfully obtained M-Pesa access token")
+                return access_token
+            else:
+                logger.error(f"No access token in response: {result}")
+                return None
+        else:
+            logger.error(
+                f"Failed to get access token. Status: {response.status_code}, "
+                f"Response: {response.text}"
+            )
+            return None
+            
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Network error getting access token: {str(e)}")
+        return None
     except Exception as e:
         logger.error(f"Error getting M-Pesa access token: {str(e)}")
         return None
 
 
 def generate_password():
-    """Generate M-Pesa password"""
+    """
+    Generate password and timestamp for STK Push
+    Password = Base64(Shortcode + Passkey + Timestamp)
+    """
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    data = f'{settings.MPESA_SHORTCODE}{settings.MPESA_PASSKEY}{timestamp}'
-    password = base64.b64encode(data.encode()).decode()
+    
+    # Concatenate: Shortcode + Passkey + Timestamp
+    data_to_encode = f"{settings.MPESA_SHORTCODE}{settings.MPESA_PASSKEY}{timestamp}"
+    
+    # Encode in base64
+    password = base64.b64encode(data_to_encode.encode()).decode()
+    
     return password, timestamp
+
 
 
 
@@ -762,48 +816,99 @@ def checkout(request):
     return render(request, 'store/checkout.html', context)
 
 
+
 def initiate_stk_push(payment):
-    """Initiate M-Pesa STK Push for Paybill"""
+    """
+    Initiate M-Pesa STK Push for Paybill
+    """
     try:
+        # Get access token
         access_token = get_mpesa_access_token()
         if not access_token:
             logger.error("Failed to get access token")
-            return None
+            return {'errorMessage': 'Failed to authenticate with M-Pesa'}
         
+        # Generate password and timestamp
         password, timestamp = generate_password()
         
+        # Determine API URL
         if settings.MPESA_ENVIRONMENT == 'sandbox':
             url = 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
         else:
             url = 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
         
+        # Set headers
         headers = {
             'Authorization': f'Bearer {access_token}',
             'Content-Type': 'application/json'
         }
         
+        # Prepare payload
         payload = {
             'BusinessShortCode': settings.MPESA_SHORTCODE,
             'Password': password,
             'Timestamp': timestamp,
-            'TransactionType': 'CustomerPayBillOnline',  # For Paybill
+            'TransactionType': 'CustomerPayBillOnline',
             'Amount': int(payment.amount),
-            'PartyA': payment.phone_number,  # Customer phone number
-            'PartyB': settings.MPESA_SHORTCODE,  # Paybill number
+            'PartyA': payment.phone_number,
+            'PartyB': settings.MPESA_SHORTCODE,
             'PhoneNumber': payment.phone_number,
             'CallBackURL': settings.MPESA_CALLBACK_URL,
-            'AccountReference': payment.account_number,  # Account number
-            'TransactionDesc': f'Order {payment.order.id}'
+            'AccountReference': payment.account_number,
+            'TransactionDesc': f'Order #{payment.order.id}'
         }
         
         logger.info(f"Initiating STK Push for order {payment.order.id}")
-        response = requests.post(url, json=payload, headers=headers, timeout=30)
-        response.raise_for_status()
+        logger.info(f"Phone: {payment.phone_number}, Amount: {payment.amount}")
         
-        return response.json()
+        # Make the request
+        response = requests.post(url, json=payload, headers=headers, timeout=60)
+        
+        # Log response
+        logger.info(f"STK Push response status: {response.status_code}")
+        logger.info(f"STK Push response: {response.text}")
+        
+        # Parse response
+        result = response.json()
+        
+        if response.status_code == 200:
+            return result
+        else:
+            error_msg = result.get('errorMessage', 'Unknown error')
+            logger.error(f"STK Push failed: {error_msg}")
+            return result
+            
+    except requests.exceptions.Timeout:
+        logger.error("STK Push request timed out")
+        return {'errorMessage': 'Request timed out. Please try again.'}
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Network error during STK Push: {str(e)}")
+        return {'errorMessage': f'Network error: {str(e)}'}
     except Exception as e:
         logger.error(f"STK Push error: {str(e)}")
-        return None
+        return {'errorMessage': f'Error: {str(e)}'}
+
+
+def verify_credentials():
+    """
+    Test function to verify M-Pesa credentials
+    Call this from Django shell to test your setup
+    """
+    print("Testing M-Pesa Credentials...")
+    print(f"Environment: {settings.MPESA_ENVIRONMENT}")
+    print(f"Consumer Key: {settings.MPESA_CONSUMER_KEY[:10]}...")
+    print(f"Shortcode: {settings.MPESA_SHORTCODE}")
+    
+    token = get_mpesa_access_token()
+    
+    if token:
+        print("✓ Credentials are valid!")
+        print(f"Access Token (first 20 chars): {token[:20]}...")
+        return True
+    else:
+        print("✗ Failed to get access token. Check your credentials.")
+        return False
+
 
 
 @csrf_exempt
