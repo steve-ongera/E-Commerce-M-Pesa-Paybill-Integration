@@ -1,0 +1,463 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sign In{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<style>
+    body {
+        font-family: 'Amazon Ember', Arial, sans-serif;
+        background-color: #FFFFFF;
+    }
+    
+    .auth-container {
+        max-width: 400px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+    
+    .auth-logo {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    .auth-logo a {
+        display: inline-block;
+        font-size: 32px;
+        font-weight: 700;
+        color: #131921;
+        text-decoration: none;
+    }
+    
+    .auth-logo .logo-orange {
+        color: #FF9900;
+    }
+    
+    .auth-box {
+        border: 1px solid #D5D9D9;
+        border-radius: 8px;
+        padding: 30px;
+        background: white;
+        margin-bottom: 20px;
+    }
+    
+    .auth-title {
+        font-size: 28px;
+        font-weight: 400;
+        margin-bottom: 20px;
+        color: #0F1111;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 5px;
+        color: #0F1111;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #888C8C;
+        border-radius: 3px;
+        font-size: 13px;
+        color: #0F1111;
+        transition: all 0.2s;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #E77600;
+        box-shadow: 0 0 0 3px #FBD8B4, 0 1px 2px rgba(0,0,0,0.15) inset;
+    }
+    
+    .form-input.error {
+        border-color: #D00000;
+    }
+    
+    .alert {
+        padding: 12px 15px;
+        margin-bottom: 15px;
+        border-radius: 4px;
+        font-size: 13px;
+    }
+    
+    .alert-error {
+        background-color: #FEF5F5;
+        border: 1px solid #E1C4C4;
+        color: #C40000;
+    }
+    
+    .alert-error i {
+        margin-right: 8px;
+    }
+    
+    .alert-success {
+        background-color: #F0F9FF;
+        border: 1px solid #BCE2F0;
+        color: #067D62;
+    }
+    
+    .alert-success i {
+        margin-right: 8px;
+    }
+    
+    .password-toggle {
+        position: relative;
+    }
+    
+    .password-toggle-btn {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #007185;
+        cursor: pointer;
+        padding: 5px;
+        font-size: 14px;
+    }
+    
+    .password-toggle-btn:hover {
+        color: #C7511F;
+    }
+    
+    .form-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        font-size: 13px;
+    }
+    
+    .remember-me {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .remember-me input {
+        cursor: pointer;
+    }
+    
+    .remember-me label {
+        cursor: pointer;
+        color: #0F1111;
+    }
+    
+    .forgot-password {
+        color: #007185;
+        text-decoration: none;
+        font-size: 13px;
+    }
+    
+    .forgot-password:hover {
+        color: #C7511F;
+        text-decoration: underline;
+    }
+    
+    .btn-primary {
+        width: 100%;
+        padding: 10px;
+        background: linear-gradient(to bottom, #F7DFA5, #F0C14B);
+        border: 1px solid #A88734;
+        border-radius: 3px;
+        color: #0F1111;
+        font-size: 13px;
+        font-weight: 400;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(to bottom, #F5D78E, #EDB932);
+        border-color: #9C7E31;
+    }
+    
+    .btn-primary:active {
+        background: #F0C14B;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2) inset;
+    }
+    
+    .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .divider {
+        text-align: center;
+        margin: 20px 0;
+        position: relative;
+    }
+    
+    .divider::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        width: 100%;
+        height: 1px;
+        background: #E7E7E7;
+    }
+    
+    .divider-text {
+        position: relative;
+        display: inline-block;
+        padding: 0 10px;
+        background: white;
+        color: #767676;
+        font-size: 12px;
+    }
+    
+    .btn-secondary {
+        width: 100%;
+        padding: 10px;
+        background: white;
+        border: 1px solid #D5D9D9;
+        border-radius: 3px;
+        color: #0F1111;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+    }
+    
+    .btn-secondary:hover {
+        background: #F7F8F8;
+        border-color: #888C8C;
+    }
+    
+    .help-text {
+        text-align: center;
+        font-size: 13px;
+        color: #0F1111;
+        margin-top: 20px;
+    }
+    
+    .help-text a {
+        color: #007185;
+        text-decoration: none;
+    }
+    
+    .help-text a:hover {
+        color: #C7511F;
+        text-decoration: underline;
+    }
+    
+    .benefits-section {
+        margin-top: 30px;
+        padding: 20px;
+        background: #F7F8F8;
+        border-radius: 8px;
+    }
+    
+    .benefits-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 15px;
+        color: #0F1111;
+    }
+    
+    .benefit-item {
+        display: flex;
+        align-items: start;
+        margin-bottom: 12px;
+        font-size: 13px;
+        color: #0F1111;
+    }
+    
+    .benefit-item i {
+        color: #067D62;
+        margin-right: 10px;
+        font-size: 16px;
+        margin-top: 2px;
+    }
+    
+    @media (max-width: 480px) {
+        .auth-container {
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+        
+        .auth-box {
+            padding: 20px;
+        }
+        
+        .auth-title {
+            font-size: 24px;
+        }
+        
+        .form-footer {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-logo">
+        <a href="{% url 'products' %}">
+            Shop<span class="logo-orange">.ke</span>
+        </a>
+    </div>
+    
+    <div class="auth-box">
+        <h1 class="auth-title">Sign in</h1>
+        
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-error{% endif %}">
+                <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %}"></i>
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+        
+        <form method="POST" id="loginForm">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="email" class="form-label">Email</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    class="form-input" 
+                    placeholder="example@email.com"
+                    value="{{ email }}"
+                    required
+                    autofocus
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <div class="password-toggle">
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        class="form-input" 
+                        placeholder="Enter your password"
+                        required
+                    >
+                    <button type="button" class="password-toggle-btn" onclick="togglePassword()">
+                        <i class="bi bi-eye" id="password-icon"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="form-footer">
+                <div class="remember-me">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember">Keep me signed in</label>
+                </div>
+                <a href="#" class="forgot-password">Forgot password?</a>
+            </div>
+            
+            <button type="submit" class="btn-primary" id="submitBtn">
+                Sign in
+            </button>
+            
+            <div class="help-text">
+                By continuing, you agree to our 
+                <a href="#">Conditions of Use</a> and 
+                <a href="#">Privacy Notice</a>.
+            </div>
+        </form>
+    </div>
+    
+    <div class="divider">
+        <span class="divider-text">New to Shop.ke?</span>
+    </div>
+    
+    <a href="{% url 'register' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" class="btn-secondary">
+        Create your Shop.ke account
+    </a>
+    
+    <div class="benefits-section">
+        <div class="benefits-title">Benefits of having an account:</div>
+        <div class="benefit-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Track your orders easily</span>
+        </div>
+        <div class="benefit-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Save items to your wishlist</span>
+        </div>
+        <div class="benefit-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Get personalized recommendations</span>
+        </div>
+        <div class="benefit-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Faster checkout experience</span>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePassword() {
+    const field = document.getElementById('password');
+    const icon = document.getElementById('password-icon');
+    
+    if (field.type === 'password') {
+        field.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        field.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+
+// Form validation
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    
+    if (!email || !password) {
+        e.preventDefault();
+        alert('Please fill in all fields!');
+        return false;
+    }
+    
+    // Disable submit button to prevent double submission
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('submitBtn').textContent = 'Signing in...';
+});
+
+// Remember email if previously entered
+window.addEventListener('load', function() {
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    if (rememberedEmail && !document.getElementById('email').value) {
+        document.getElementById('email').value = rememberedEmail;
+    }
+});
+
+// Save email if remember me is checked
+document.getElementById('loginForm').addEventListener('submit', function() {
+    const remember = document.getElementById('remember').checked;
+    const email = document.getElementById('email').value;
+    
+    if (remember) {
+        localStorage.setItem('rememberedEmail', email);
+    } else {
+        localStorage.removeItem('rememberedEmail');
+    }
+});
+</script>
+{% endblock %}

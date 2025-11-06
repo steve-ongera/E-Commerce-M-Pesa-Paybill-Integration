@@ -1192,3 +1192,458 @@ def order_list(request):
     """Display user's orders"""
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'store/order_list.html', {'orders': orders})
+
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.contrib import messages
+from django.db.models import Count, Sum, Q
+from django.core.paginator import Paginator
+from .models import Order, OrderItem, Address, Review, Wishlist, Product
+import re
+
+
+def register_view(request):
+    """
+    User registration view
+    """
+    if request.user.is_authenticated:
+        return redirect('account')
+    
+    if request.method == 'POST':
+        # Get form data
+        name = request.POST.get('name', '').strip()
+        email = request.POST.get('email', '').strip().lower()
+        phone = request.POST.get('phone', '').strip()
+        password = request.POST.get('password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+        
+        # Validation
+        errors = []
+        
+        if not name or len(name) < 2:
+            errors.append('Please enter your full name (at least 2 characters).')
+        
+        if not email:
+            errors.append('Please enter your email address.')
+        elif not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
+            errors.append('Please enter a valid email address.')
+        elif User.objects.filter(email=email).exists():
+            errors.append('This email is already registered.')
+        
+        if not phone:
+            errors.append('Please enter your phone number.')
+        elif not re.match(r'^\+?[\d\s-]{10,}$', phone):
+            errors.append('Please enter a valid phone number.')
+        
+        if not password:
+            errors.append('Please enter a password.')
+        elif len(password) < 6:
+            errors.append('Password must be at least 6 characters long.')
+        
+        if password != confirm_password:
+            errors.append('Passwords do not match.')
+        
+        # Create username from email
+        username = email.split('@')[0]
+        base_username = username
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
+        
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return render(request, 'accounts/register.html', {
+                'name': name,
+                'email': email,
+                'phone': phone,
+            })
+        
+        # Create user
+        try:
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                first_name=name.split()[0] if name else '',
+                last_name=' '.join(name.split()[1:]) if len(name.split()) > 1 else ''
+            )
+            
+            # Create default address with phone number
+            Address.objects.create(
+                user=user,
+                phone_number=phone,
+                is_default=True
+            )
+            
+            # Log the user in
+            login(request, user)
+            messages.success(request, f'Welcome {name}! Your account has been created successfully.')
+            
+            # Redirect to next page or account
+            next_url = request.GET.get('next', 'account')
+            return redirect(next_url)
+            
+        except Exception as e:
+            messages.error(request, 'An error occurred. Please try again.')
+            return render(request, 'accounts/register.html', {
+                'name': name,
+                'email': email,
+                'phone': phone,
+            })
+    
+    return render(request, 'accounts/register.html')
+
+
+def login_view(request):
+    """
+    User login view
+    """
+    if request.user.is_authenticated:
+        return redirect('account')
+    
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip().lower()
+        password = request.POST.get('password', '')
+        
+        if not email or not password:
+            messages.error(request, 'Please enter both email and password.')
+            return render(request, 'accounts/login.html', {'email': email})
+        
+        # Find user by email
+        try:
+            user_obj = User.objects.get(email=email)
+            username = user_obj.username
+        except User.DoesNotExist:
+            messages.error(request, 'Invalid email or password.')
+            return render(request, 'accounts/login.html', {'email': email})
+        
+        # Authenticate
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            login(request, user)
+            messages.success(request, f'Welcome back, {user.first_name or user.username}!')
+            
+            # Redirect to next page or account
+            next_url = request.GET.get('next', 'account')
+            return redirect(next_url)
+        else:
+            messages.error(request, 'Invalid email or password.')
+            return render(request, 'accounts/login.html', {'email': email})
+    
+    return render(request, 'accounts/login.html')
+
+
+@login_required
+def logout_view(request):
+    """
+    User logout view
+    """
+    logout(request)
+    messages.success(request, 'You have been logged out successfully.')
+    return redirect('login')
+
+
+@login_required
+def account_view(request):
+    """
+    User account dashboard
+    """
+    user = request.user
+    
+    # Get recent orders
+    recent_orders = Order.objects.filter(user=user).order_by('-created_at')[:5]
+    
+    # Get order statistics
+    total_orders = Order.objects.filter(user=user).count()
+    pending_orders = Order.objects.filter(user=user, status='pending').count()
+    completed_orders = Order.objects.filter(user=user, status='completed').count()
+    
+    # Get wishlist count
+    wishlist_count = Wishlist.objects.filter(user=user).count()
+    
+    # Get review count
+    review_count = Review.objects.filter(user=user).count()
+    
+    # Get default address
+    default_address = Address.objects.filter(user=user, is_default=True).first()
+    
+    context = {
+        'recent_orders': recent_orders,
+        'total_orders': total_orders,
+        'pending_orders': pending_orders,
+        'completed_orders': completed_orders,
+        'wishlist_count': wishlist_count,
+        'review_count': review_count,
+        'default_address': default_address,
+    }
+    
+    return render(request, 'accounts/account.html', context)
+
+
+@login_required
+def orders_view(request):
+    """
+    User orders list
+    """
+    orders = Order.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Filter by status
+    status = request.GET.get('status')
+    if status:
+        orders = orders.filter(status=status)
+    
+    # Search
+    search = request.GET.get('search')
+    if search:
+        orders = orders.filter(
+            Q(order_number__icontains=search) |
+            Q(items__product__name__icontains=search)
+        ).distinct()
+    
+    # Pagination
+    paginator = Paginator(orders, 10)
+    page = request.GET.get('page', 1)
+    orders = paginator.get_page(page)
+    
+    context = {
+        'orders': orders,
+        'current_status': status,
+    }
+    
+    return render(request, 'accounts/orders.html', context)
+
+
+@login_required
+def order_detail_view(request, order_id):
+    """
+    Order detail view
+    """
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    
+    context = {
+        'order': order,
+    }
+    
+    return render(request, 'accounts/order_detail.html', context)
+
+
+@login_required
+def addresses_view(request):
+    """
+    User addresses management
+    """
+    addresses = Address.objects.filter(user=request.user).order_by('-is_default', '-created_at')
+    
+    context = {
+        'addresses': addresses,
+    }
+    
+    return render(request, 'accounts/addresses.html', context)
+
+
+@login_required
+def add_address_view(request):
+    """
+    Add new address
+    """
+    if request.method == 'POST':
+        address_type = request.POST.get('address_type', 'home')
+        full_name = request.POST.get('full_name', '').strip()
+        phone_number = request.POST.get('phone_number', '').strip()
+        address_line1 = request.POST.get('address_line1', '').strip()
+        address_line2 = request.POST.get('address_line2', '').strip()
+        city = request.POST.get('city', '').strip()
+        postal_code = request.POST.get('postal_code', '').strip()
+        is_default = request.POST.get('is_default') == 'on'
+        
+        # Validation
+        if not all([full_name, phone_number, address_line1, city]):
+            messages.error(request, 'Please fill in all required fields.')
+            return render(request, 'accounts/add_address.html', request.POST)
+        
+        # If setting as default, remove default from other addresses
+        if is_default:
+            Address.objects.filter(user=request.user, is_default=True).update(is_default=False)
+        
+        # Create address
+        Address.objects.create(
+            user=request.user,
+            address_type=address_type,
+            full_name=full_name,
+            phone_number=phone_number,
+            address_line1=address_line1,
+            address_line2=address_line2,
+            city=city,
+            postal_code=postal_code,
+            is_default=is_default
+        )
+        
+        messages.success(request, 'Address added successfully.')
+        return redirect('addresses')
+    
+    return render(request, 'accounts/add_address.html')
+
+
+@login_required
+def edit_address_view(request, address_id):
+    """
+    Edit address
+    """
+    address = get_object_or_404(Address, id=address_id, user=request.user)
+    
+    if request.method == 'POST':
+        address.address_type = request.POST.get('address_type', 'home')
+        address.full_name = request.POST.get('full_name', '').strip()
+        address.phone_number = request.POST.get('phone_number', '').strip()
+        address.address_line1 = request.POST.get('address_line1', '').strip()
+        address.address_line2 = request.POST.get('address_line2', '').strip()
+        address.city = request.POST.get('city', '').strip()
+        address.postal_code = request.POST.get('postal_code', '').strip()
+        is_default = request.POST.get('is_default') == 'on'
+        
+        # Validation
+        if not all([address.full_name, address.phone_number, address.address_line1, address.city]):
+            messages.error(request, 'Please fill in all required fields.')
+            return render(request, 'accounts/edit_address.html', {'address': address})
+        
+        # If setting as default, remove default from other addresses
+        if is_default and not address.is_default:
+            Address.objects.filter(user=request.user, is_default=True).update(is_default=False)
+        
+        address.is_default = is_default
+        address.save()
+        
+        messages.success(request, 'Address updated successfully.')
+        return redirect('addresses')
+    
+    context = {
+        'address': address,
+    }
+    
+    return render(request, 'accounts/edit_address.html', context)
+
+
+@login_required
+def delete_address_view(request, address_id):
+    """
+    Delete address
+    """
+    address = get_object_or_404(Address, id=address_id, user=request.user)
+    
+    # Don't allow deletion of default address if it's the only one
+    if address.is_default and Address.objects.filter(user=request.user).count() == 1:
+        messages.error(request, 'Cannot delete your only address.')
+        return redirect('addresses')
+    
+    address.delete()
+    messages.success(request, 'Address deleted successfully.')
+    
+    return redirect('addresses')
+
+
+@login_required
+def profile_view(request):
+    """
+    User profile management
+    """
+    user = request.user
+    
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip().lower()
+        
+        # Validation
+        if not first_name:
+            messages.error(request, 'First name is required.')
+            return render(request, 'accounts/profile.html')
+        
+        if email != user.email and User.objects.filter(email=email).exists():
+            messages.error(request, 'This email is already in use.')
+            return render(request, 'accounts/profile.html')
+        
+        # Update user
+        user.first_name = first_name
+        user.last_name = last_name
+        user.email = email
+        user.save()
+        
+        messages.success(request, 'Profile updated successfully.')
+        return redirect('profile')
+    
+    return render(request, 'accounts/profile.html')
+
+
+@login_required
+def change_password_view(request):
+    """
+    Change password
+    """
+    if request.method == 'POST':
+        current_password = request.POST.get('current_password', '')
+        new_password = request.POST.get('new_password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+        
+        # Validation
+        if not request.user.check_password(current_password):
+            messages.error(request, 'Current password is incorrect.')
+            return render(request, 'accounts/change_password.html')
+        
+        if len(new_password) < 6:
+            messages.error(request, 'New password must be at least 6 characters long.')
+            return render(request, 'accounts/change_password.html')
+        
+        if new_password != confirm_password:
+            messages.error(request, 'New passwords do not match.')
+            return render(request, 'accounts/change_password.html')
+        
+        # Update password
+        request.user.set_password(new_password)
+        request.user.save()
+        
+        # Keep user logged in
+        update_session_auth_hash(request, request.user)
+        
+        messages.success(request, 'Password changed successfully.')
+        return redirect('account')
+    
+    return render(request, 'accounts/change_password.html')
+
+
+@login_required
+def wishlist_view(request):
+    """
+    User wishlist
+    """
+    wishlist_items = Wishlist.objects.filter(user=request.user).select_related('product', 'product__brand')
+    
+    context = {
+        'wishlist_items': wishlist_items,
+    }
+    
+    return render(request, 'accounts/wishlist.html', context)
+
+
+@login_required
+def reviews_view(request):
+    """
+    User reviews
+    """
+    reviews = Review.objects.filter(user=request.user).select_related('product').order_by('-created_at')
+    
+    # Pagination
+    paginator = Paginator(reviews, 10)
+    page = request.GET.get('page', 1)
+    reviews = paginator.get_page(page)
+    
+    context = {
+        'reviews': reviews,
+    }
+    
+    return render(request, 'accounts/reviews.html', context)

@@ -36,4 +36,29 @@ urlpatterns = [
     # Order URLs
     path('orders/', views.order_list, name='order_list'),
     path('order/<int:order_id>/', views.order_detail, name='order_detail'),
+    
+    # Authentication
+    path('register/', views.register_view, name='register'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    
+    # Account Dashboard
+    path('account/', views.account_view, name='account'),
+    path('account/profile/', views.profile_view, name='profile'),
+    path('account/change-password/', views.change_password_view, name='change_password'),
+    
+    # Orders
+    path('account/orders/', views.orders_view, name='orders'),
+    path('account/orders/<int:order_id>/', views.order_detail_view, name='order_detail'),
+    
+    # Addresses
+    path('account/addresses/', views.addresses_view, name='addresses'),
+    path('account/addresses/add/', views.add_address_view, name='add_address'),
+    path('account/addresses/<int:address_id>/edit/', views.edit_address_view, name='edit_address'),
+    path('account/addresses/<int:address_id>/delete/', views.delete_address_view, name='delete_address'),
+    
+    # Wishlist & Reviews
+    path('account/wishlist/', views.wishlist_view, name='wishlist'),
+    path('account/reviews/', views.reviews_view, name='reviews'),
+
 ]
