@@ -98,11 +98,32 @@ def product_list(request):
     return render(request, 'store/product_list.html', context)
 
 
-def product_detail(request, pk):
-    """Display product details"""
-    product = get_object_or_404(Product, pk=pk, is_active=True)
+def product_detail(request, slug):
+    """Display product details using slug"""
+    product = get_object_or_404(Product, slug=slug, is_active=True)
     return render(request, 'store/product_detail.html', {'product': product})
 
+
+from django.shortcuts import render, get_object_or_404
+from .models import Category, Product
+from django.core.paginator import Paginator
+
+def category_view(request, category_id):
+    """Display products belonging to a specific category."""
+    category = get_object_or_404(Category, id=category_id)
+    products = category.products.filter(is_active=True).order_by('-created_at')
+
+    # Optional pagination (6 products per page)
+    paginator = Paginator(products, 6)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'category': category,
+        'page_obj': page_obj,
+        'products': page_obj.object_list,  # for convenience
+    }
+    return render(request, 'store/category.html', context)
 
 # Cart Views
 @login_required

@@ -6,8 +6,10 @@ urlpatterns = [
     path('api/search-suggestions/', views.search_suggestions, name='search'),
     # Product URLs
     path('products/', views.product_list, name='products'),
-    path('product/<int:pk>/', views.product_detail, name='product_detail'),
+    path('product/<slug:slug>/', views.product_detail, name='product_detail'),
+    path('category/<int:category_id>/', views.category_view, name='category'),
     
+
     # Cart URLs
     path('cart/', views.cart_view, name='cart'),
     path('cart/add/<int:product_id>/', views.add_to_cart, name='add_to_cart'),
