@@ -11,3 +11,14 @@ def split(value, separator=' '):
     if not value:
         return []
     return value.split(separator)
+
+@register.filter
+def multiply(value, arg):
+    """
+    Multiplies two values in templates
+    Example: {{ price|multiply:quantity }}
+    """
+    try:
+        return float(value) * float(arg)
+    except (ValueError, TypeError):
+        return 0

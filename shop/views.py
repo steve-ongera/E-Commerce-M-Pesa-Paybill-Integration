@@ -81,22 +81,6 @@ def generate_password():
     return password, timestamp
 
 
-# Product Views
-def product_list(request):
-    """Display all products"""
-    products = Product.objects.filter(is_active=True)
-    categories = Category.objects.all()
-    
-    category_id = request.GET.get('category')
-    if category_id:
-        products = products.filter(category_id=category_id)
-    
-    context = {
-        'products': products,
-        'categories': categories,
-    }
-    return render(request, 'store/product_list.html', context)
-
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -479,7 +463,7 @@ def cart_view(request):
         'cart_items': cart_items,
     }
     
-    return render(request, 'products/cart.html', context)
+    return render(request, 'store/cart.html', context)
 
 
 @login_required
@@ -621,39 +605,7 @@ def category_view(request, category_id):
     }
     return render(request, 'store/category.html', context)
 
-# Cart Views
-@login_required
-def cart_view(request):
-    """Display shopping cart"""
-    cart, created = Cart.objects.get_or_create(user=request.user)
-    return render(request, 'store/cart.html', {'cart': cart})
 
-
-@login_required
-@require_POST
-def add_to_cart(request, product_id):
-    """Add product to cart"""
-    product = get_object_or_404(Product, pk=product_id)
-    cart, created = Cart.objects.get_or_create(user=request.user)
-    
-    quantity = int(request.POST.get('quantity', 1))
-    
-    if product.stock < quantity:
-        messages.error(request, 'Insufficient stock')
-        return redirect('product_detail', pk=product_id)
-    
-    cart_item, created = CartItem.objects.get_or_create(
-        cart=cart,
-        product=product,
-        defaults={'quantity': quantity}
-    )
-    
-    if not created:
-        cart_item.quantity += quantity
-        cart_item.save()
-    
-    messages.success(request, f'{product.name} added to cart')
-    return redirect('cart_view')
 
 
 @login_required
@@ -695,7 +647,7 @@ def checkout(request):
     
     if not cart.items.exists():
         messages.error(request, 'Your cart is empty')
-        return redirect('cart_view')
+        return redirect('cart')
     
     if request.method == 'POST':
         phone_number = request.POST.get('phone_number', '').strip()
