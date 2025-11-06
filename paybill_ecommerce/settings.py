@@ -126,8 +126,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ============================================
 # M-PESA CONFIGURATION
 # ============================================
-
-# M-Pesa Environment (sandbox or production)
 MPESA_ENVIRONMENT = config('MPESA_ENVIRONMENT', default='sandbox')
 
 # M-Pesa Consumer Key and Secret (from Daraja Portal)
@@ -139,9 +137,6 @@ MPESA_SHORTCODE = config('MPESA_SHORTCODE', default='174379')  # Sandbox shortco
 
 # M-Pesa Passkey (from Daraja Portal)
 MPESA_PASSKEY = config('MPESA_PASSKEY', default='')
-
-# M-Pesa Callback URL (must be publicly accessible)
-# Use ngrok for local testing: https://your-ngrok-url.ngrok.io/mpesa/callback/
 MPESA_CALLBACK_URL = config(
     'MPESA_CALLBACK_URL', 
     default='https://yourdomain.com/mpesa/callback/'
